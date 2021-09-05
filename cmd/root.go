@@ -37,7 +37,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/riton/nagios-plugin-git-hosted-project-merge-requests/nagios"
@@ -48,14 +50,34 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+type rootCmdFlags struct {
+	Host                    string        `mapstructure:"host"`
+	Debug                   bool          `mapstructure:"debug"`
+	Timeout                 time.Duration `mapstructure:"timeout"`
+	ConfigFile              string
+	GitProvider             string        `mapstructure:"git-provider"`
+	APIToken                string        `mapstructure:"api-token"`
+	Project                 string        `mapstructure:"project"`
+	TargetBranch            string        `mapstructure:"target-branch"`
+	WarningLastUpdateDelay  time.Duration `mapstructure:"delay-warning-last-update"`
+	CriticalLastUpdateDelay time.Duration `mapstructure:"delay-critical-last-update"`
+}
+
+var (
+	// Default command flags
+	cmdFlags = rootCmdFlags{
+		Timeout: 30 * time.Second,
+	}
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:           "nagios-plugin-git-hosted-project-merge-requests",
-	Short:         "Checks that a github / gitlab / gitea project has opened merge requests",
-	Long:          ``,
-	Run:           nagios.ProbeCobraAdapter,
+	Use:   "nagios-plugin-git-hosted-project-merge-requests",
+	Short: "Checks that a github / gitlab / gitea project has opened merge requests",
+	Long:  ``,
+	Run: func(cmd *cobra.Command, args []string) {
+		nagios.ProbeCobraAdapter(cmd, args, nagiosConfigViperAdapter())
+	},
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
@@ -75,43 +97,72 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is /etc/nagios-plugin-git-hosted-project-merge-requests/config.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cmdFlags.ConfigFile, "config", "c", "", "config file (default is /etc/nagios-plugin-git-hosted-project-merge-requests/config.yaml)")
 
-	rootCmd.Flags().StringP("host", "H", "", "host to check")
+	rootCmd.Flags().StringVarP(&cmdFlags.Host, "host", "H", "", "host to check (API endpoint)")
 	rootCmd.MarkFlagRequired("host")
 
-	rootCmd.PersistentFlags().DurationP("timeout", "t", 30*time.Second, "Global timeout")
+	rootCmd.Flags().StringVarP(&cmdFlags.Project, "project", "P", "", "project to check for opened MergeRequests")
+	rootCmd.MarkFlagRequired("project")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("debug", "d", false, "Enable debug")
+	rootCmd.Flags().StringVarP(&cmdFlags.GitProvider, "git-provider", "p", "", fmt.Sprintf("git provider can be one of %s", strings.Join([]string{nagios.GitlabGitProvider}, ",")))
+
+	rootCmd.PersistentFlags().DurationVarP(&cmdFlags.Timeout, "timeout", "t", 30*time.Second, "Global timeout")
+	rootCmd.PersistentFlags().BoolVarP(&cmdFlags.Debug, "debug", "d", false, "Enable debug")
+
+	rootCmd.Flags().StringVar(&cmdFlags.APIToken, "api-token", "", "API Token used for authentication")
+	rootCmd.Flags().StringVar(&cmdFlags.TargetBranch, "target-branch", "master", "Only consider merge requests with this target-branch")
+
+	rootCmd.Flags().DurationVar(&cmdFlags.WarningLastUpdateDelay, "warning-last-update", 6*time.Hour, "warning if last-update was that delay ago")
+	rootCmd.Flags().DurationVar(&cmdFlags.CriticalLastUpdateDelay, "critical-last-update", 24*time.Hour, "critical if last-update was that delay ago")
 
 	viper.BindPFlag("host", rootCmd.Flags().Lookup("host"))
-	//viper.BindPFlag("ssh.connect_timeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
+	viper.BindPFlag("project", rootCmd.Flags().Lookup("project"))
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
+	viper.BindPFlag("api-token", rootCmd.Flags().Lookup("api-token"))
+	viper.BindPFlag("git-provider", rootCmd.Flags().Lookup("git-provider"))
+	viper.BindPFlag("target-branch", rootCmd.Flags().Lookup("target-branch"))
+	viper.BindPFlag("warning-last-update", rootCmd.Flags().Lookup("warning-last-update"))
+	viper.BindPFlag("critical-last-update", rootCmd.Flags().Lookup("critical-last-update"))
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	log.SetOutput(os.Stderr)
 
-	if cfgFile != "" {
+	if cmdFlags.ConfigFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(cmdFlags.ConfigFile)
 	} else {
 		// Search config in home directory with name ".nagios-plugin-check_ssh_interactive_connect" (without extension).
 		viper.AddConfigPath("/etc/nagios-plugin-git-hosted-project-merge-requests")
 		viper.SetConfigName("config")
 	}
 
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv() // read in environment variables that match
 
-	debug, _ := rootCmd.Flags().GetBool("debug")
-	if debug {
+	if cmdFlags.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		log.Debug("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+func nagiosConfigViperAdapter() nagios.ProbeConfig {
+	return nagios.ProbeConfig{
+		Timeout:                 viper.GetDuration("timeout"),
+		APIEndpoint:             viper.GetString("host"),
+		Project:                 viper.GetString("project"),
+		Debug:                   viper.GetBool("debug"),
+		APIToken:                viper.GetString("api-token"),
+		GitProvider:             viper.GetString("git-provider"),
+		TargetBranch:            viper.GetString("target-branch"),
+		WarningLastUpdateDelay:  viper.GetDuration("warning-last-update"),
+		CriticalLastUpdateDelay: viper.GetDuration("critical-last-update"),
 	}
 }
