@@ -28,3 +28,22 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+# Generate DEB and RPM using NFPM
+nfpms:
+  - file_name_template: '{{ .ProjectName }}_{{ .Arch }}'
+    homepage:  https://github.com/riton/nagios-plugin-git-hosted-project-merge-requests
+    description: This nagios plugin helps project maintainers hosted on Gitlab, Github, etc... to keep track of their staled Merge Request / Pull Requests.
+    maintainer: Remi Ferrand <riton.github_at_gmail.com>
+    license: CeCILL-B
+    vendor: GoReleaser
+    formats:
+      - apk
+      - deb
+      - rpm
+    bindir: '/usr/lib{{ if ne .Arch "386" }}64{{ end }}/nagios/plugins'
+    contents:
+      - src: ./example/config.yaml
+        dst: /usr/share/{{ .ProjectName }}/config.sample.yaml
+    empty_folders:
+      - /etc/nagios-plugin-git-hosted-project-merge-requests
