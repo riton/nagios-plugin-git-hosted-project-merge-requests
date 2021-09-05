@@ -1,7 +1,7 @@
 /*
-Copyright © 2020 IN2P3 Computing Centre, IN2P3, CNRS
+Copyright © 2021 Remi Ferrand
 
-Contributor(s): Remi Ferrand <remi.ferrand_at_cc.in2p3.fr>, 2020
+Contributor(s): Remi Ferrand <riton.github_at_gmail(dot)com>, 2021
 
 This software is a computer program whose purpose is to [describe
 functionalities and technical features of your software].
@@ -40,8 +40,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/riton/nagios-plugin-git-hosted-project-merge-requests/nagios"
+	"github.com/spf13/cobra"
 
 	log "github.com/sirupsen/logrus"
 
@@ -52,9 +52,9 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "nagios-plugin-git-hosted-project-merge-requests",
-	Short: "Checks that a github / gitlab / gitea project has opened merge requests",
-	Long: ``,
+	Use:           "nagios-plugin-git-hosted-project-merge-requests",
+	Short:         "Checks that a github / gitlab / gitea project has opened merge requests",
+	Long:          ``,
 	Run:           nagios.ProbeCobraAdapter,
 	SilenceUsage:  true,
 	SilenceErrors: true,

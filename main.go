@@ -1,7 +1,7 @@
 /*
-Copyright © 2020 IN2P3 Computing Centre, IN2P3, CNRS
+Copyright © 2021 Remi Ferrand
 
-Contributor(s): Remi Ferrand <remi.ferrand_at_cc.in2p3.fr>, 2020
+Contributor(s): Remi Ferrand <riton.github_at_gmail(dot)com>, 2021
 
 This software is a computer program whose purpose is to [describe
 functionalities and technical features of your software].
@@ -38,9 +38,9 @@ package main
 import (
 	"context"
 
-	"github.com/riton/nagiosplugin/v2"
 	"github.com/riton/nagios-plugin-git-hosted-project-merge-requests/cmd"
 	"github.com/riton/nagios-plugin-git-hosted-project-merge-requests/nagios"
+	"github.com/riton/nagiosplugin/v2"
 )
 
 func main() {
