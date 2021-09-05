@@ -1,1 +1,3 @@
 check_git_project_merge_requests
+
+dist/
