@@ -1,5 +1,7 @@
 # Nagios plugin to check git hosted project Merge Request
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/riton/nagios-plugin-git-hosted-project-merge-requests)](https://goreportcard.com/report/github.com/riton/nagios-plugin-git-hosted-project-merge-requests)
+
 ## Description
 
 This nagios plugin helps project maintainers hosted on Gitlab, Github, etc... to keep track of their _staled_ Merge Request / Pull Requests.
@@ -47,7 +49,7 @@ OK: No opened merge requests | 'total_duration'=0.551541323s;;;; 'opened_merge_r
 ### Opened Merge Requests within acceptable range
 
 ```
-$ API_TOKEN=XXXXXXX check_git_project_merge_requests -H https://gitlab.com -P "riton/blog" -p gitlab 
+$ API_TOKEN=XXXXXXX check_git_project_merge_requests -H https://gitlab.com -P "riton/blog" -p gitlab
 OK: No merge requests too old | 'total_duration'=0.566831438s;;;; 'opened_merge_requests'=1;;;; 'oldest_merge_request'=1319.409961917s;;;;
 ```
 
